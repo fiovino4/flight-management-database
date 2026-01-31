@@ -86,7 +86,7 @@ CREATE UNIQUE INDEX ux_one_captain_per_flight
 ON pilot_assignment(flight_id)
 WHERE role = 'Captain';
 
--- Option X: tickets_sold must not exceed aircraft seat_capacity
+-- Tickets_sold must not exceed aircraft seat_capacity
 CREATE TRIGGER trg_ticket_capacity_ins
 BEFORE INSERT ON flight
 BEGIN
@@ -107,7 +107,7 @@ BEGIN
   END;
 END;
 
--- Uniqueness add-on: aircraft cannot be scheduled for overlapping flights
+-- Aircraft cannot be scheduled for overlapping flights
 CREATE TRIGGER trg_no_overlap_aircraft_ins
 BEFORE INSERT ON flight
 BEGIN
@@ -137,7 +137,7 @@ BEGIN
   END;
 END;
 
--- Uniqueness add-on: cannot assign pilots to Cancelled flights
+-- Cannot assign pilots to Cancelled flights
 CREATE TRIGGER trg_no_assign_cancelled
 BEFORE INSERT ON pilot_assignment
 BEGIN
