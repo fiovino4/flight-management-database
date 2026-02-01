@@ -191,6 +191,7 @@ def update_flight_status(conn):
         print("ERROR: Update failed:", e)
 
 # 7) DELETE FLIGHT
+
 def delete_flight(conn):
     print("\nDELETE FLIGHT (DELETE)")
 
@@ -210,6 +211,7 @@ def delete_flight(conn):
         print("ERROR: Delete failed:", e)
 
 # 8) ASSIGN PILOT TO FLIGHT
+
 def assign_pilot_to_flight(conn):
     print("\nASSIGN PILOT TO FLIGHT (CREATE)")
 
@@ -285,6 +287,7 @@ def view_pilot_schedule(conn):
     print_rows(rows)
 
 # 9) VIEW DESTINATION  
+
 def view_destinations(conn):
     print("\nDESTINATIONS (READ)")
 
@@ -296,6 +299,30 @@ def view_destinations(conn):
 
     rows = conn.execute(sql)
     print_rows(rows)
+
+# 10) UPDATE DESTINATIONS
+def update_destination_active(conn):
+    print("\nUPDATE DESTINATION ACTIVE (UPDATE)")
+
+    iata = input("Destination IATA code (e.g., CDG): ").strip().upper()
+    active = input("Set active to 1 or 0: ").strip()
+
+    # Simple input validation
+    if active not in ["0", "1"]:
+        print("ERROR: You must type 0 or 1.")
+        return
+
+    cur = conn.execute(
+        "UPDATE destination SET active=? WHERE iata_code=?",
+        (int(active), iata)
+    )
+    conn.commit()
+
+    # rowcount tells us if a row was actually updated
+    if cur.rowcount == 0:
+        print("ERROR: Destination not found.")
+    else:
+        print("OK: Destination updated.")
 
 
 # MAIN MENU LOOP
@@ -320,6 +347,7 @@ def main():
         print("8) Assign pilot to flight (CREATE)")
         print("9) View pilot schedule (READ)")
         print("10) View destinations (READ)")
+        print("11) Update destination active flag (UPDATE)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -343,10 +371,12 @@ def main():
             view_pilot_schedule(conn)
         elif choice == "10":
             view_destinations(conn)
+        elif choice == "11":
+            update_destination_active(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 or 0.")
 
     conn.close()
     print("Goodbye!")
