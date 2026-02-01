@@ -166,6 +166,29 @@ def add_flight(conn):
     except sqlite3.IntegrityError as e:
         print("ERROR: Could not add flight:", e)
 
+# 6) UPDATE FLIGHT STATUS
+def update_flight_status(conn):
+    print("\nUPDATE FLIGHT STATUS (UPDATE)")
+
+    # Ask which flight to update
+    flight_id = input("Flight ID: ").strip()
+    new_status = input("New status (e.g., Scheduled/Delayed/Departed): ").strip()
+
+    # Basic check for empty status
+    if new_status == "":
+        print("ERROR: status cannot be blank.")
+        return
+
+    try:
+        # Update one column using the flight_id
+        conn.execute(
+            "UPDATE flight SET status=? WHERE flight_id=?",
+            (new_status, flight_id)
+        )
+        conn.commit()
+        print("OK: Status updated.")
+    except sqlite3.IntegrityError as e:
+        print("ERROR: Update failed:", e)
 
 
 # MAIN MENU LOOP
@@ -185,6 +208,7 @@ def main():
         print("3) View flights by destination and status")
         print("4) View flights by destination, status, and date")
         print("5) Add a new flight (CREATE)")
+        print("6) Update flight status (UPDATE)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -198,10 +222,12 @@ def main():
             view_flights_by_dest_status_date(conn)
         elif choice == "5":
             add_flight(conn)
+        elif choice == "6":
+            update_flight_status(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6 or 0.")
 
     conn.close()
     print("Goodbye!")
