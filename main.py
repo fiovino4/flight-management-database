@@ -190,6 +190,26 @@ def update_flight_status(conn):
     except sqlite3.IntegrityError as e:
         print("ERROR: Update failed:", e)
 
+# 7) DELETE FLIGHT
+def delete_flight(conn):
+    print("\nDELETE FLIGHT (DELETE)")
+
+    flight_id = input("Flight ID to delete: ").strip()
+
+    # Simple safety check: confirm delete
+    confirm = input("Type YES to confirm delete: ").strip().upper()
+    if confirm != "YES":
+        print("Delete cancelled.")
+        return
+
+    try:
+        conn.execute("DELETE FROM flight WHERE flight_id=?", (flight_id,))
+        conn.commit()
+        print("OK: Flight deleted.")
+    except sqlite3.IntegrityError as e:
+        print("ERROR: Delete failed:", e)
+
+
 
 # MAIN MENU LOOP
 
@@ -209,6 +229,7 @@ def main():
         print("4) View flights by destination, status, and date")
         print("5) Add a new flight (CREATE)")
         print("6) Update flight status (UPDATE)")
+        print("7) Delete flight (DELETE)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -224,10 +245,12 @@ def main():
             add_flight(conn)
         elif choice == "6":
             update_flight_status(conn)
+        elif choice == "7":
+            delete_flight(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7 or 0.")
 
     conn.close()
     print("Goodbye!")
