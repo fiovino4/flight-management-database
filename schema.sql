@@ -60,7 +60,7 @@ CREATE TABLE flight (
   CHECK (origin_id <> destination_id),
   CHECK (arrival_dt > departure_dt),
 
-  -- Uniqueness add-on: gate format like A1, B12 (blank allowed)
+  -- Gate format like A1, B12 (blank allowed)
   CHECK (gate IS NULL OR gate = '' OR gate GLOB '[A-Z][0-9]*')
 );
 
@@ -81,7 +81,7 @@ CREATE TABLE pilot_assignment (
   FOREIGN KEY (pilot_id) REFERENCES pilot(pilot_id)
 );
 
--- Bonus uniqueness (simple & strong): only ONE Captain per flight
+-- Only ONE Captain per flight
 CREATE UNIQUE INDEX ux_one_captain_per_flight
 ON pilot_assignment(flight_id)
 WHERE role = 'Captain';

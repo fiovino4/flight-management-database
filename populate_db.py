@@ -83,7 +83,7 @@ def main():
         [(fn, ln, lic, rk, dmap[base], act) for fn, ln, lic, rk, base, act in pilots]
     )
 
-    # 4) FLIGHT (10) — simplest: each aircraft gets exactly ONE flight (no overlap possible)
+    # 4) FLIGHT (10): each aircraft gets exactly ONE flight (no overlap possible)
     random.seed(7)
     airports = ["LHR","CDG","FCO","JFK","LAX","DXB","HND","SIN","AMS","MAD","IST","DUB","BKK","MNL"]
     start = datetime(2026, 2, 3, 6, 0)
@@ -97,13 +97,13 @@ def main():
 
         aid = amap[reg]
 
-        # simple schedule: each aircraft flight starts 3 hours after the previous one
+        # Schedule: each aircraft flight starts 3 hours after the previous one
         dep = start + timedelta(hours=i * 3)
         arr = dep + timedelta(hours=2)
 
         status = "Scheduled"
         if i == 4:
-            status = "Cancelled"  # keep 1 cancelled flight to demonstrate your trigger
+            status = "Cancelled"  
 
         terminal = random.choice(["T1","T2","T3",None])
         gate = random.choice(gates)
