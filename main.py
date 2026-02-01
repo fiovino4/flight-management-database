@@ -209,6 +209,81 @@ def delete_flight(conn):
     except sqlite3.IntegrityError as e:
         print("ERROR: Delete failed:", e)
 
+# 8) ASSIGN PILOT TO FLIGHT
+def assign_pilot_to_flight(conn):
+    print("\nASSIGN PILOT TO FLIGHT (CREATE)")
+
+    flight_id = input("Flight ID (number): ").strip()
+
+    if not flight_id.isdigit():
+        print("ERROR: Flight ID must be a number.")
+        return
+
+    # Show flight so user knows what they are assigning to
+    flight = conn.execute(
+        "SELECT flight_id, flight_no, status FROM flight WHERE flight_id=?",
+        (flight_id,)
+    ).fetchone()
+
+    if not flight:
+        print("ERROR: No flight found with that flight_id.")
+        return
+
+    print(f"Selected flight: ID={flight['flight_id']} | {flight['flight_no']} | status={flight['status']}")
+
+    license_no = input("Pilot license_no (e.g., LIC-UK-1001): ").strip().upper()
+    role = input("Role (Captain / First Officer): ").strip()
+
+    # Find pilot_id from license number
+    pilot = conn.execute(
+        "SELECT pilot_id, first_name, last_name FROM pilot WHERE license_no=? AND active=1",
+        (license_no,)
+    ).fetchone()
+
+    if not pilot:
+        print("ERROR: Pilot not found (or inactive).")
+        return
+
+    print(f"Pilot found: ID={pilot['pilot_id']} | {pilot['first_name']} {pilot['last_name']}")
+
+    # Insert assignment
+    try:
+        conn.execute(
+            "INSERT INTO pilot_assignment(flight_id, pilot_id, role) VALUES (?,?,?)",
+            (int(flight_id), int(pilot["pilot_id"]), role)
+        )
+        conn.commit()
+        print("OK: Pilot assigned to flight.")
+    except sqlite3.IntegrityError as e:
+        print("ERROR: Assignment failed:", e)
+
+# Show all flights for a pilot 
+def view_pilot_schedule(conn):
+    print("\nVIEW PILOT SCHEDULE (READ)")
+
+    license_no = input("Pilot license_no (e.g., LIC-UK-1001): ").strip().upper()
+
+    sql = """
+    SELECT pa.assignment_id,
+           pa.role,
+           f.flight_id,
+           f.flight_no,
+           o.iata_code AS origin,
+           d.iata_code AS destination,
+           f.departure_dt,
+           f.status
+    FROM pilot p
+    JOIN pilot_assignment pa ON pa.pilot_id = p.pilot_id
+    JOIN flight f ON f.flight_id = pa.flight_id
+    JOIN destination o ON o.destination_id = f.origin_id
+    JOIN destination d ON d.destination_id = f.destination_id
+    WHERE p.license_no = ?
+    ORDER BY f.departure_dt;
+    """
+
+    rows = conn.execute(sql, (license_no,))
+    print_rows(rows)
+
 
 
 # MAIN MENU LOOP
@@ -230,6 +305,8 @@ def main():
         print("5) Add a new flight (CREATE)")
         print("6) Update flight status (UPDATE)")
         print("7) Delete flight (DELETE)")
+        print("8) Assign pilot to flight (CREATE)")
+        print("9) View pilot schedule (READ)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -247,10 +324,14 @@ def main():
             update_flight_status(conn)
         elif choice == "7":
             delete_flight(conn)
+        elif choice == "8":
+            assign_pilot_to_flight(conn)
+        elif choice == "9":
+            view_pilot_schedule(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6, 7 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9 or 0.")
 
     conn.close()
     print("Goodbye!")
