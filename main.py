@@ -342,7 +342,24 @@ def report_flights_per_destination(conn):
     rows = conn.execute(sql)
     print_rows(rows)
 
+# FLIGHT PER PILOT
 
+def report_flights_per_pilot(conn):
+    print("\nREPORT: FLIGHTS PER PILOT (AGGREGATION)")
+
+    
+    sql = """
+    SELECT p.license_no,
+           p.first_name || ' ' || p.last_name AS pilot_name,
+           COUNT(*) AS flights_assigned
+    FROM pilot p
+    JOIN pilot_assignment pa ON pa.pilot_id = p.pilot_id
+    GROUP BY p.pilot_id
+    ORDER BY flights_assigned DESC;
+    """
+
+    rows = conn.execute(sql)
+    print_rows(rows)
 
 # MAIN MENU LOOP
 
@@ -367,6 +384,7 @@ def main():
         print("9) View pilot schedule (READ)")
         print("10) View destinations (READ)")
         print("11) Update destination active flag (UPDATE)")
+        print("12) Report: Flights per destination (AGGREGATION)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -394,10 +412,12 @@ def main():
             update_destination_active(conn)
         elif choice == "12":
             report_flights_per_destination(conn)
+        elif choice == "13":
+            report_flights_per_pilot(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 or 0.")
 
     conn.close()
     print("Goodbye!")
