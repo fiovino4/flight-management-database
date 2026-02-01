@@ -97,6 +97,76 @@ def view_flights_by_dest_status_date(conn):
     date = input("Departure date YYYY-MM-DD (blank = all): ").strip()
     run_flight_query(conn, dest=dest, status=status, date=date)
 
+# 5) CREATE FLIGHT 
+
+def add_flight(conn):
+    print("\nADD FLIGHT (CREATE)")
+
+    flight_no = input("Flight number (e.g., AX999): ").strip().upper()
+    origin = input("Origin IATA (e.g., LHR): ").strip().upper()
+    dest = input("Destination IATA (e.g., CDG): ").strip().upper()
+    reg = input("Aircraft registration (e.g., G-AX01): ").strip().upper()
+    dep = input("Departure datetime (YYYY-MM-DD HH:MM): ").strip()
+    arr = input("Arrival datetime   (YYYY-MM-DD HH:MM): ").strip()
+    status = input("Status (default Scheduled): ").strip()
+    if status == "":
+        status = "Scheduled"
+
+    gate = input("Gate (optional, e.g., A1): ").strip().upper()
+    if gate == "":
+        gate = None
+
+    tickets_text = input("Tickets sold (default 0): ").strip()
+    if tickets_text == "":
+        tickets_sold = 0
+    else:
+        tickets_sold = int(tickets_text)
+
+    # Look up foreign keys (IDs) from codes typed by the user
+    origin_row = conn.execute(
+        "SELECT destination_id FROM destination WHERE iata_code=?",
+        (origin,)
+    ).fetchone()
+
+    dest_row = conn.execute(
+        "SELECT destination_id FROM destination WHERE iata_code=?",
+        (dest,)
+    ).fetchone()
+
+    aircraft_row = conn.execute(
+        "SELECT aircraft_id FROM aircraft WHERE registration=?",
+        (reg,)
+    ).fetchone()
+
+    if not origin_row or not dest_row or not aircraft_row:
+        print("ERROR: origin/destination/aircraft not found in database.")
+        return
+
+    try:
+        conn.execute(
+            """INSERT INTO flight(
+                   flight_no, origin_id, destination_id, aircraft_id,
+                   departure_dt, arrival_dt, status, gate, tickets_sold
+               )
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (
+                flight_no,
+                origin_row["destination_id"],
+                dest_row["destination_id"],
+                aircraft_row["aircraft_id"],
+                dep,
+                arr,
+                status,
+                gate,
+                tickets_sold
+            )
+        )
+        conn.commit()
+        print("OK: Flight added.")
+    except sqlite3.IntegrityError as e:
+        print("ERROR: Could not add flight:", e)
+
+
 
 # MAIN MENU LOOP
 
@@ -114,6 +184,7 @@ def main():
         print("2) View flights by destination")
         print("3) View flights by destination and status")
         print("4) View flights by destination, status, and date")
+        print("5) Add a new flight (CREATE)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -125,10 +196,12 @@ def main():
             view_flights_by_destination_and_status(conn)
         elif choice == "4":
             view_flights_by_dest_status_date(conn)
+        elif choice == "5":
+            add_flight(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4 or 0.")
+            print("Please choose 1, 2, 3, 4, 5 or 0.")
 
     conn.close()
     print("Goodbye!")
