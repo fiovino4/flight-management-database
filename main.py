@@ -284,6 +284,18 @@ def view_pilot_schedule(conn):
     rows = conn.execute(sql, (license_no,))
     print_rows(rows)
 
+# 9) VIEW DESTINATION  
+def view_destinations(conn):
+    print("\nDESTINATIONS (READ)")
+
+    sql = """
+    SELECT destination_id, iata_code, city, country, timezone, active
+    FROM destination
+    ORDER BY iata_code;
+    """
+
+    rows = conn.execute(sql)
+    print_rows(rows)
 
 
 # MAIN MENU LOOP
@@ -307,6 +319,7 @@ def main():
         print("7) Delete flight (DELETE)")
         print("8) Assign pilot to flight (CREATE)")
         print("9) View pilot schedule (READ)")
+        print("10) View destinations (READ)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -328,6 +341,8 @@ def main():
             assign_pilot_to_flight(conn)
         elif choice == "9":
             view_pilot_schedule(conn)
+        elif choice == "10":
+            view_destinations(conn)
         elif choice == "0":
             break
         else:
