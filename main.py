@@ -85,6 +85,70 @@ def view_flights_by_destination(conn):
     rows = conn.execute(sql, (dest,))
     print_rows(rows)
 
+def view_flights_by_destination_and_status(conn):
+    # Ask for destination and status
+    dest = input("Destination IATA (blank = all): ").strip().upper()
+    status = input("Status (blank = all): ").strip()
+
+    # CASE 1: user leaves status blank -> filter only by destination (or show all)
+    if status == "":
+        if dest == "":
+            # no filters at all
+            view_all_flights(conn)
+            return
+        else:
+            # destination only
+            sql = """
+            SELECT f.flight_id, f.flight_no,
+                   o.iata_code AS origin,
+                   d.iata_code AS destination,
+                   f.departure_dt,
+                   f.status
+            FROM flight f
+            JOIN destination o ON o.destination_id = f.origin_id
+            JOIN destination d ON d.destination_id = f.destination_id
+            WHERE d.iata_code = ?
+            ORDER BY f.departure_dt;
+            """
+            rows = conn.execute(sql, (dest,))
+            print_rows(rows)
+            return
+
+    # CASE 2: user typed a status -> filter by status (and destination if given)
+    if dest == "":
+        # status only
+        sql = """
+        SELECT f.flight_id, f.flight_no,
+               o.iata_code AS origin,
+               d.iata_code AS destination,
+               f.departure_dt,
+               f.status
+        FROM flight f
+        JOIN destination o ON o.destination_id = f.origin_id
+        JOIN destination d ON d.destination_id = f.destination_id
+        WHERE f.status = ?
+        ORDER BY f.departure_dt;
+        """
+        rows = conn.execute(sql, (status,))
+        print_rows(rows)
+    else:
+        # destination + status
+        sql = """
+        SELECT f.flight_id, f.flight_no,
+               o.iata_code AS origin,
+               d.iata_code AS destination,
+               f.departure_dt,
+               f.status
+        FROM flight f
+        JOIN destination o ON o.destination_id = f.origin_id
+        JOIN destination d ON d.destination_id = f.destination_id
+        WHERE d.iata_code = ?
+          AND f.status = ?
+        ORDER BY f.departure_dt;
+        """
+        rows = conn.execute(sql, (dest, status))
+        print_rows(rows)
+
 def main():
     # If database file is missing, tell user what to do
     if not DB_FILE.exists():
@@ -99,6 +163,7 @@ def main():
         print("\n=== MENU ===")
         print("1) View all flights")
         print("2) View flights by destination")
+        print("3) View flights by destination and status")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -106,10 +171,12 @@ def main():
             view_all_flights(conn)
         elif choice == "2":
             view_flights_by_destination(conn)
+        elif choice == "3":
+            view_flights_by_destination_and_status(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2 or 0.")
+            print("Please choose 1, 2, 3 or 0.")
 
     conn.close()
     print("Goodbye!")
