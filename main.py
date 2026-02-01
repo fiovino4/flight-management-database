@@ -59,6 +59,31 @@ def view_all_flights(conn):
     rows = conn.execute(sql)
     print_rows(rows)
 
+def view_flights_by_destination(conn):
+    # Ask user for destination IATA code (example: CDG)
+    dest = input("Destination IATA (e.g., CDG): ").strip().upper()
+
+    # If user forgot to type anything
+    if dest == "":
+        print("You did not type a destination.")
+        return
+
+    # Simple READ query with a WHERE filter
+    sql = """
+    SELECT f.flight_id, f.flight_no,
+           o.iata_code AS origin,
+           d.iata_code AS destination,
+           f.departure_dt,
+           f.status
+    FROM flight f
+    JOIN destination o ON o.destination_id = f.origin_id
+    JOIN destination d ON d.destination_id = f.destination_id
+    WHERE d.iata_code = ?
+    ORDER BY f.departure_dt;
+    """
+
+    rows = conn.execute(sql, (dest,))
+    print_rows(rows)
 
 def main():
     # If database file is missing, tell user what to do
@@ -69,19 +94,22 @@ def main():
 
     conn = connect_db()
 
-    # Menu (just 2 options for now)
+    # Menu (just 2 options)
     while True:
         print("\n=== MENU ===")
         print("1) View all flights")
+        print("2) View flights by destination")
         print("0) Exit")
         choice = input("Select: ").strip()
 
         if choice == "1":
             view_all_flights(conn)
+        elif choice == "2":
+            view_flights_by_destination(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1 or 0.")
+            print("Please choose 1, 2 or 0.")
 
     conn.close()
     print("Goodbye!")
