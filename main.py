@@ -324,6 +324,25 @@ def update_destination_active(conn):
     else:
         print("OK: Destination updated.")
 
+# 11) FLIGHT PER DESTINATION 
+
+def report_flights_per_destination(conn):
+    print("\nREPORT: FLIGHTS PER DESTINATION (AGGREGATION)")
+
+    sql = """
+    SELECT d.iata_code AS destination,
+           d.city,
+           COUNT(*) AS flights_count
+    FROM flight f
+    JOIN destination d ON d.destination_id = f.destination_id
+    GROUP BY d.destination_id
+    ORDER BY flights_count DESC;
+    """
+
+    rows = conn.execute(sql)
+    print_rows(rows)
+
+
 
 # MAIN MENU LOOP
 
@@ -373,10 +392,12 @@ def main():
             view_destinations(conn)
         elif choice == "11":
             update_destination_active(conn)
+        elif choice == "12":
+            report_flights_per_destination(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 or 0.")
 
     conn.close()
     print("Goodbye!")
