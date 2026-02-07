@@ -4,19 +4,24 @@ import random
 from pathlib import Path
 from datetime import datetime, timedelta
 
+# Database file created in the same folder as this script
 DB = Path(__file__).with_name("flight_management.db")
+# SQL schema file 
 SCHEMA = Path(__file__).with_name("schema.sql")
 
 def main():
-    # Reset DB
+    # Reset the DB so every run starts from the same clean state
+    # This avoids "duplicate key" errors and makes testing reproducible.
     if DB.exists():
         DB.unlink()
 
+    # Connect and enable FK enforcement
     conn = sqlite3.connect(DB)
     conn.execute("PRAGMA foreign_keys = ON;")
+    # Build the schema in one go
     conn.executescript(SCHEMA.read_text(encoding="utf-8"))
 
-    # 1) DESTINATION (15)
+    # 1) DESTINATION (15). Each destination uses a unique 3-letter IATA code and includes one inactive airport (SGN) to test active/inactive behaviour.
     destinations = [
         ("LHR","London","United Kingdom","Europe/London",1),
         ("CDG","Paris","France","Europe/Paris",1),
@@ -39,11 +44,11 @@ def main():
         destinations
     )
 
-    # 2) AIRCRAFT (10)
+    # 2) AIRCRAFT (10). Each aircraft has a unique registration and seat capacity. Seat capacity is later used to generate valid tickets_sold values.
     aircraft = [
         ("G-AX01","A320-200",180,1),
         ("G-AX02","B737-800",189,1),
-        ("N-AX03","B787-9",290,1),
+        ("N-AX03","B787-9",290,1), 
         ("A6-AX04","A380-800",525,1),
         ("JA-AX05","A350-900",325,1),
         ("F-AX06","A321neo",220,1),
@@ -57,12 +62,12 @@ def main():
         aircraft
     )
 
-    # FK maps
+    # Build look-up maps so we can insert FK values easily (dmap maps IATA code -> destination_id amap maps registration -> aircraft_id)
     dmap = {iata: did for did, iata in conn.execute("SELECT destination_id,iata_code FROM destination")}
     amap = {reg: aid for aid, reg in conn.execute("SELECT aircraft_id,registration FROM aircraft")}
     regs = list(amap.keys())
 
-    # 3) PILOT (12)
+    # 3) PILOT (12). Mix of Captains and First Officers. Each pilot has a unique license number. base_destination_id is set using an IATA code resolved through dmap.
     pilots = [
         ("Amelia","Wright","LIC-UK-1001","Captain","LHR",1),
         ("Noah","Bennett","LIC-UK-1002","First Officer","LHR",1),
@@ -83,7 +88,7 @@ def main():
         [(fn, ln, lic, rk, dmap[base], act) for fn, ln, lic, rk, base, act in pilots]
     )
 
-    # 4) FLIGHT (10): each aircraft gets exactly ONE flight (no overlap possible)
+    # 4) FLIGHT (10): each aircraft gets exactly ONE flight (no overlap possible), Times are stored as ISO strings: "YYYY-MM-DD HH:MM" to match the schema and one flight is marked Cancelled to test trigger behaviour (pilot assignment).
     random.seed(7)
     airports = ["LHR","CDG","FCO","JFK","LAX","DXB","HND","SIN","AMS","MAD","IST","DUB","BKK","MNL"]
     start = datetime(2026, 2, 3, 6, 0)
@@ -101,15 +106,17 @@ def main():
         dep = start + timedelta(hours=i * 3)
         arr = dep + timedelta(hours=2)
 
-        status = "Scheduled"
-        if i == 4:
-            status = "Cancelled"  
+        # Add one cancelled flight as an edge case for testing constraints/triggers
+        status = "Cancelled" if i == 4 else "Scheduled"
 
         terminal = random.choice(["T1","T2","T3",None])
         gate = random.choice(gates)
 
+        # Generate tickets_sold within aircraft capacity (avoids trigger violations)
         cap = conn.execute("SELECT seat_capacity FROM aircraft WHERE aircraft_id=?", (aid,)).fetchone()[0]
         tickets = random.randint(0, cap)
+
+        # Optional notes field (adds realism and tests nullable columns)
         notes = random.choice([None,"Weather watch","VIP on board",None])
 
         flight_rows.append((
@@ -125,7 +132,7 @@ def main():
         flight_rows
     )
 
-    # 5) PILOT_ASSIGNMENT — 1 captain + 1 FO per non-cancelled flight
+    # 5) PILOT_ASSIGNMENT — 1 captain + 1 FO per non-cancelled flight. Cancelled flights are skipped (also matches the trigger in the schema).
     pilots_db = conn.execute(
         "SELECT pilot_id, rank FROM pilot WHERE active=1 ORDER BY pilot_id"
     ).fetchall()
