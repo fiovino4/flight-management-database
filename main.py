@@ -342,7 +342,7 @@ def report_flights_per_destination(conn):
     rows = conn.execute(sql)
     print_rows(rows)
 
-# FLIGHT PER PILOT
+# 12) FLIGHT PER PILOT
 
 def report_flights_per_pilot(conn):
     print("\nREPORT: FLIGHTS PER PILOT (AGGREGATION)")
@@ -360,6 +360,40 @@ def report_flights_per_pilot(conn):
 
     rows = conn.execute(sql)
     print_rows(rows)
+
+# 13) UPDATE FLIGHT TIME
+
+def update_flight_times(conn):
+    print("\nUPDATE FLIGHT TIMES (UPDATE)")
+
+    flight_id = input("Flight ID: ").strip()
+    if not flight_id.isdigit():
+        print("ERROR: Flight ID must be a number.")
+        return
+
+    dep = input("New departure datetime (YYYY-MM-DD HH:MM): ").strip()
+    arr = input("New arrival datetime   (YYYY-MM-DD HH:MM): ").strip()
+
+    if dep == "" or arr == "":
+        print("ERROR: departure and arrival cannot be blank.")
+        return
+
+    try:
+        cur = conn.execute(
+            "UPDATE flight SET departure_dt=?, arrival_dt=? WHERE flight_id=?",
+            (dep, arr, int(flight_id))
+        )
+        conn.commit()
+
+        if cur.rowcount == 0:
+            print("ERROR: No flight found with that flight_id.")
+        else:
+            print("OK: Flight times updated.")
+    except sqlite3.IntegrityError as e:
+        # This will catch CHECK(arrival_dt > departure_dt)
+        # and overlap triggers
+        print("ERROR: Update failed:", e)
+
 
 # MAIN MENU LOOP
 
@@ -385,6 +419,8 @@ def main():
         print("10) View destinations (READ)")
         print("11) Update destination active flag (UPDATE)")
         print("12) Report: Flights per destination (AGGREGATION)")
+        print("13) Report: Flights per pilot (AGGREGATION)")
+        print("14) Update flight times (UPDATE)")
         print("0) Exit")
         choice = input("Select: ").strip()
 
@@ -414,10 +450,12 @@ def main():
             report_flights_per_destination(conn)
         elif choice == "13":
             report_flights_per_pilot(conn)
+        elif choice == "14":
+            update_flight_times(conn)
         elif choice == "0":
             break
         else:
-            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 or 0.")
+            print("Please choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 or 0.")
 
     conn.close()
     print("Goodbye!")
